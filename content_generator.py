@@ -11,7 +11,7 @@ Do not include hashtags or emojis."""
 
     try:
         response = client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are a helpful assistant who writes great social media content."},
                 {"role": "user", "content": prompt}
