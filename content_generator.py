@@ -1,5 +1,6 @@
 import os
 from openai import OpenAI
+from openai import OpenAIError
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -8,13 +9,16 @@ def generate_post(topic, platform, tone):
 Include a strong hook and make it engaging. Keep it short and optimized for {platform}.
 Do not include hashtags or emojis."""
 
-    response = client.chat.completions.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant who writes great social media content."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.7
-    )
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant who writes great social media content."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7
+        )
+        return response.choices[0].message.content.strip()
     
-    return response.choices[0].message.content.strip()
+    except OpenAIError as e:
+        return f"❌ Error calling OpenAI API: {str(e)}"
