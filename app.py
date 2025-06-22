@@ -1,51 +1,49 @@
+import os
 import streamlit as st
-from content_generator import generate_post
-from utils import suggest_hashtags
+from openai import OpenAI
+from openai import OpenAIError
 
-st.set_page_config(page_title="📱 Social Media Manager AI", page_icon="📱")
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", st.secrets.get("OPENAI_API_KEY")))
 
-st.title("📱 Social Media Manager AI")
-st.subheader("Let AI write engaging posts for you in seconds!")
+@st.cache_data(show_spinner=False)
+def revamp_strategy(current_strategy, goals, platform="Instagram"):
+    prompt = f"""
+You are a top-tier social media consultant. A user is currently doing this on {platform}:
 
-# User input
-platform = st.selectbox("Choose a platform", ["Instagram", "Facebook", "LinkedIn", "Twitter (X)"])
-tone = st.selectbox("Select tone", ["Professional", "Casual", "Funny", "Inspirational", "Bold"])
-length = st.selectbox("Select post length", ["Short", "Medium", "Long"])
-topic = st.text_input("What is your post about?")
+Current Strategy: {current_strategy}
 
-# Extra options
-col1, col2, col3 = st.columns(3)
-with col1:
-    use_emojis = st.checkbox("Add Emojis")
-with col2:
-    use_hashtags = st.checkbox("Add Hashtags")
-with col3:
-    use_cta = st.checkbox("Include Call-To-Action")
+Goals: {goals}
 
-# Generate button
-if st.button("Generate Post"):
-    if not topic.strip():
-        st.warning("Please enter a topic.")
-    else:
-        with st.spinner("Writing your post..."):
-            result = generate_post(
-                topic=topic,
-                platform=platform,
-                tone=tone,
-                length=length,
-                include_emojis=use_emojis,
-                include_hashtags=use_hashtags,
-                include_cta=use_cta
-            )
+Provide a detailed, improved strategy with actionable steps to improve reach, engagement, and follower growth.
+"""
 
-            if isinstance(result, dict) and "error" in result:
-                st.error(result["error"])
-            else:
-                st.success("✅ Here's your post:")
-                st.markdown(result)
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.8
+        )
+        return response.choices[0].message.content.strip()
+    except OpenAIError as e:
+        return f"❌ Error: {str(e)}"
 
-                if use_hashtags:
-                    hashtags = suggest_hashtags(topic)
-                    if hashtags:
-                        st.markdown("**Suggested Hashtags:**")
-                        st.write(" ".join(hashtags))
+@st.cache_data(show_spinner=False)
+def generate_activity_plan(platform, goals):
+    prompt = f"""
+You are an expert social media manager. Based on the following platform and user goals, create a weekly activity plan to boost presence:
+
+Platform: {platform}
+Goals: {goals}
+
+Give a 7-day schedule with post ideas, interaction strategies, and time-of-day suggestions.
+"""
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.8
+        )
+        return response.choices[0].message.content.strip()
+    except OpenAIError as e:
+        return f"❌ Error: {str(e)}"
