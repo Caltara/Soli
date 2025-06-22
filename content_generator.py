@@ -1,12 +1,37 @@
+import os
+from openai import OpenAI
+from openai import OpenAIError
 import streamlit as st
-from openai import OpenAI, OpenAIError
 
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", st.secrets.get("OPENAI_API_KEY")))
 
-def generate_post(topic, platform, tone):
+# Streamlit caching: avoid regenerating identical content
+@st.cache_data(show_spinner=False)
+def generate_post(topic, platform, tone, length="Medium", include_emojis=False, include_hashtags=False, include_cta=False):
+    # Optional content instructions
+    extras = []
+
+    if include_emojis:
+        extras.append("Include appropriate emojis.")
+    if include_hashtags:
+        extras.append("Add relevant and trending hashtags.")
+    if include_cta:
+        extras.append("Add a call-to-action at the end of the post.")
+
+    if platform.lower() == "linkedin":
+        extras.append("Use Markdown formatting where appropriate (e.g., bold headings or bullet points).")
+
+    # Length instruction
+    length_map = {
+        "Short": "Keep the post under 30 words.",
+        "Medium": "Keep the post around 50 words.",
+        "Long": "Write a detailed post of up to 100 words."
+    }
+    length_instruction = length_map.get(length, "")
+
+    # Combine full prompt
     prompt = f"""Write a {tone.lower()} {platform.lower()} post about "{topic}". 
-Include a strong hook and make it engaging. Keep it short and optimized for {platform}.
-Do not include hashtags or emojis."""
+Include a strong hook and make it engaging. {length_instruction} {' '.join(extras)}"""
 
     try:
         response = client.chat.completions.create(
@@ -17,7 +42,19 @@ Do not include hashtags or emojis."""
             ],
             temperature=0.7
         )
-        return response.choices[0].message.content.strip()
-    
+
+        return {
+            "post": response.choices[0].message.content.strip(),
+            "platform": platform,
+            "tone": tone,
+            "length": length,
+            "topic": topic,
+            "emojis": include_emojis,
+            "hashtags": include_hashtags,
+            "cta": include_cta
+        }
+
     except OpenAIError as e:
-        return f"❌ Error calling OpenAI API: {str(e)}"
+        return {
+            "error": f"❌ OpenAI API Error: {str(e)}"
+        }
