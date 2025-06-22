@@ -5,10 +5,8 @@ import streamlit as st
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", st.secrets.get("OPENAI_API_KEY")))
 
-# Streamlit caching: avoid regenerating identical content
 @st.cache_data(show_spinner=False)
 def generate_post(topic, platform, tone, length="Medium", include_emojis=False, include_hashtags=False, include_cta=False):
-    # Optional content instructions
     extras = []
 
     if include_emojis:
@@ -17,11 +15,9 @@ def generate_post(topic, platform, tone, length="Medium", include_emojis=False, 
         extras.append("Add relevant and trending hashtags.")
     if include_cta:
         extras.append("Add a call-to-action at the end of the post.")
-
     if platform.lower() == "linkedin":
         extras.append("Use Markdown formatting where appropriate (e.g., bold headings or bullet points).")
 
-    # Length instruction
     length_map = {
         "Short": "Keep the post under 30 words.",
         "Medium": "Keep the post around 50 words.",
@@ -29,7 +25,6 @@ def generate_post(topic, platform, tone, length="Medium", include_emojis=False, 
     }
     length_instruction = length_map.get(length, "")
 
-    # Combine full prompt
     prompt = f"""Write a {tone.lower()} {platform.lower()} post about "{topic}". 
 Include a strong hook and make it engaging. {length_instruction} {' '.join(extras)}"""
 
@@ -44,9 +39,6 @@ Include a strong hook and make it engaging. {length_instruction} {' '.join(extra
         )
 
         return response.choices[0].message.content.strip()
-        }
 
     except OpenAIError as e:
-        return {
-            "error": f"❌ OpenAI API Error: {str(e)}"
-        }
+        return f"❌ OpenAI API Error: {str(e)}"
