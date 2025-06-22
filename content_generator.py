@@ -43,15 +43,7 @@ Include a strong hook and make it engaging. {length_instruction} {' '.join(extra
             temperature=0.7
         )
 
-        return {
-            "post": response.choices[0].message.content.strip(),
-            "platform": platform,
-            "tone": tone,
-            "length": length,
-            "topic": topic,
-            "emojis": include_emojis,
-            "hashtags": include_hashtags,
-            "cta": include_cta
+        return response.choices[0].message.content.strip()
         }
 
     except OpenAIError as e:
